@@ -20,6 +20,11 @@ const createUser = asyncHandler(async (req, res) => {
         message: "Password And confirm Password do not match",
       });
     }
+    if (password.length < 7) {
+      res.status(400).json({
+        message: "Password Must be more than 7 charachters Long",
+      });
+    }
     const userExist = await Users.findOne({ email });
     if (userExist) {
       return res.status(400).json({
@@ -34,11 +39,16 @@ const createUser = asyncHandler(async (req, res) => {
       password: hash,
     });
     const result = await user.save();
+    const payload = {
+      userId: result._id,
+      userEmail: result.email,
+      userName: result.name,
+    };
     if (result) {
       return res.status(200).json({
         status: true,
         message: "User Created Successfully",
-        data: result,
+        data: payload,
       });
     }
   } catch (error) {

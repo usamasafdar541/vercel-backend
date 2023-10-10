@@ -4,7 +4,7 @@ const userSchema = mongoose.Schema(
   {
     email: {
       type: String,
-      required: true,
+      // required: true,
       unique: true,
       validate: {
         validator: function (v) {
@@ -15,11 +15,11 @@ const userSchema = mongoose.Schema(
     },
     name: {
       type: String,
-      required: [true, "Username is required"],
+      // required: [true, "Username is required"],
     },
     password: {
       type: String,
-      required: [true, "Password is Required"],
+      // required: [true, "Password is Required"],
     },
     designation: {
       type: String,
