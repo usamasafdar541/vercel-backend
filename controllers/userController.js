@@ -233,83 +233,81 @@ const resetPassword = asyncHandler(async (req, res) => {
 const createNewUser = asyncHandler(async (req, res) => {
   try {
     // Check if the user has admin role
-    if (!req?.user?.roles == "admin") {
-      return res.send("Not Allowed");
-    }
-    const {
-      name,
-      email,
-      designation,
-      department,
-      gender,
-      phone,
-      cnic,
-      address,
-    } = req.body;
+    if (req?.user?.roles === "admin") {
+      const {
+        name,
+        email,
+        designation,
+        department,
+        gender,
+        phone,
+        cnic,
+        address,
+      } = req.body;
 
-    // Check if required fields are present
-    if (
-      !name ||
-      !email ||
-      !designation ||
-      !department ||
-      !gender ||
-      !phone ||
-      !cnic ||
-      !address
-    ) {
-      return res.status(404).json({
-        status: false,
-        message: "All fields are required",
+      // Check if required fields are present
+      if (
+        !name ||
+        !email ||
+        !designation ||
+        !department ||
+        !gender ||
+        !phone ||
+        !cnic ||
+        !address
+      ) {
+        return res.status(404).json({
+          status: false,
+          message: "All fields are required",
+        });
+      }
+
+      // Check if the email already exists
+      const emailExist = await Users.findOne({ email });
+      if (emailExist) {
+        return res.status(404).json({
+          status: false,
+          message: "Email already exists",
+        });
+      }
+
+      // Check if the CNIC already exists
+      const cnicExist = await Users.findOne({ cnic });
+      if (cnicExist) {
+        return res.status(404).json({
+          status: false,
+          message: "CNIC already exists",
+        });
+      }
+
+      // Create a new user
+      const user = new Users({
+        name,
+        email,
+        designation,
+        department,
+        gender,
+        phone,
+        cnic,
+        address,
+      });
+
+      // Save the user to the database
+      const result = await user.save();
+
+      return res.status(200).json({
+        status: true,
+        message: "User created successfully",
+        data: result,
       });
     }
-
-    // Check if the email already exists
-    const emailExist = await Users.findOne({ email });
-    if (emailExist) {
-      return res.status(404).json({
+     else {
+      // If the user doesn't have admin role, return unauthorized
+      res.status(404).json({
         status: false,
-        message: "Email already exists",
+        message: "UNAUTHORIZED, Admin access required",
       });
     }
-
-    // Check if the CNIC already exists
-    const cnicExist = await Users.findOne({ cnic });
-    if (cnicExist) {
-      return res.status(404).json({
-        status: false,
-        message: "CNIC already exists",
-      });
-    }
-
-    // Create a new user
-    const user = new Users({
-      name,
-      email,
-      designation,
-      department,
-      gender,
-      phone,
-      cnic,
-      address,
-    });
-
-    // Save the user to the database
-    const result = await user.save();
-
-    return res.status(200).json({
-      status: true,
-      message: "User created successfully",
-      data: result,
-    });
-    // }
-    //  else {
-    // If the user doesn't have admin role, return unauthorized
-    res.status(404).json({
-      status: false,
-      message: "UNAUTHORIZED, Admin access required",
-    });
-    // }
   } catch (error) {
     return res.status(500).json({
       status: false,
@@ -317,7 +315,8 @@ const createNewUser = asyncHandler(async (req, res) => {
       error: error.message,
     });
   }
-});
+}
+);
 
 const getUser = asyncHandler(async (req, res) => {
   try {
