@@ -34,6 +34,7 @@ const createUser = asyncHandler(async (req, res) => {
         message: "User Already exist",
       });
     }
+    //password HAshing
     const hash = await bcrypt.hash(password, 10);
     let user;
     if (roles === "superadmin") {
