@@ -4,7 +4,6 @@ const userSchema = mongoose.Schema(
   {
     email: {
       type: String,
-      // required: true,
       unique: true,
       validate: {
         validator: function (v) {
@@ -15,18 +14,57 @@ const userSchema = mongoose.Schema(
     },
     name: {
       type: String,
-      // required: [true, "Username is required"],
     },
     password: {
       type: String,
-      // required: [true, "Password is Required"],
     },
     designation: {
       type: String,
-    }
+    },
+    status: {
+      type: String,
+      enum: ["activated", "deactivated"],
+      default: "activated",
+    },
+    dateCreated: {
+      type: Date,
+      default: Date.now,
+    },
+    dateDeactivated: {
+      type: Date,
+    },
+    department: {
+      type: String,
+    },
+    gender: {
+      type: String,
+      enum: ["male", "female", "other"],
+    },
+    phone: {
+      type: String,
+    },
+    cnic: {
+      type: String,
+      validate: {
+        validator: function (v) {
+          return /^[0-9]{5}-[0-9]{7}-[0-9]{1}$/.test(v);
+        },
+        message: "Invalid CNIC format. Correct format: 12345-1234567-1",
+      },
+    },
+    address: {
+      type: String,
+    },
+    resetToken: {
+      type: String,
+    },
+    resetTokenExpiration: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
   }
 );
+
 module.exports = mongoose.model("Users", userSchema);

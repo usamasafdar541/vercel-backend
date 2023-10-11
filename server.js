@@ -1,17 +1,17 @@
 const express = require("express");
-const app = express();
 const dotEnv = require("dotenv").config();
-// const corsMiddleware = require("./middleware/corsHandler");
 const cors = require("cors");
+const app = express();
+app.use(cors());
+// const corsMiddleware = require("./middleware/corsHandler");
 // const bodyParser = require("body-parser");
-console.log(dotEnv);
+// console.log(dotEnv);
 
 const contactRoutes = require("./routes/contactRoutes");
 const errorHandler = require("./middleware/errorHandler");
 const userRoutes = require("./routes/userRoutes");
 
 const port = process.env.PORT || 3000;
-app.use(cors());
 // app.use(corsMiddleware);
 require("./config/db");
 app.use(express.json());
