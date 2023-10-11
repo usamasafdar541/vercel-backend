@@ -16,6 +16,7 @@ const validateToken = asyncHandler(async (req, res, next) => {
       // Check if the token is expired
       if (decoded.exp * 1000 < Date.now()) {
         return res.status(401).json({
+          status: false,
           message: "Token has expired",
         });
       }
@@ -29,8 +30,9 @@ const validateToken = asyncHandler(async (req, res, next) => {
     } catch (error) {
       // If verification fails, handle the error
       res.status(401).json({
+        status: false,
         message: "User is not authorized",
-        error: error.message,
+        // error: error.message,
       });
     }
   } else {

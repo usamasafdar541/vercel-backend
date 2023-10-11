@@ -9,7 +9,7 @@ const { token } = require("morgan");
 
 const createUser = asyncHandler(async (req, res) => {
   try {
-    const { email, name, password, confirmPassword } = req.body;
+    const { email, name, password, confirmPassword, roles } = req.body;
     console.log(req.body);
     if (!email || !name || !password || !confirmPassword) {
       return res.status(400).json({
@@ -35,16 +35,35 @@ const createUser = asyncHandler(async (req, res) => {
       });
     }
     const hash = await bcrypt.hash(password, 10);
-    const user = await new Users({
-      email,
-      name,
-      password: hash,
-    });
+    let user;
+    if (roles === "superadmin") {
+      const requestingUser = req.user;
+      if (!requestingUser || requestingUser.roles !== "superadmin") {
+        res.status(403).json({
+          status: false,
+          message: "ONLY SUPERADMIN CAN CREATE AN ADMIN",
+        });
+        user = await new Users({
+          email,
+          name,
+          password: hash,
+          roles: ["admin"],
+        });
+      }
+    } else {
+      user = await new Users({
+        email,
+        name,
+        password: hash,
+        roles: ["employee"],
+      });
+    }
     const result = await user.save();
     const payload = {
       userId: result._id,
       userEmail: result.email,
       userName: result.name,
+      roles: result.roles,
     };
     if (result) {
       return res.status(200).json({
@@ -66,41 +85,58 @@ const loginUser = asyncHandler(async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await Users.findOne({ email });
+
     if (!user) {
       return res.status(404).json({
         status: false,
         message: "No User Found with this email",
       });
     }
+
     const matchPassword = await bcrypt.compare(password, user.password);
+
     if (!matchPassword) {
       return res.status(401).json({
         status: false,
         message: "Invalid Credentials",
       });
     }
+
     const tokenPayload = {
-      user: { id: user.id, name: user.name, email: user.email },
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        roles: user.roles,
+      },
     };
-    console.log(tokenPayload, "Payload");
+
+    const isAdmin = user.roles === "admin";
+    // const redirectURL = isAdmin ? "/admin-dashboard" : "/employee-dashboard";
+
     const token = jwt.sign(tokenPayload, jwtSecret, {
       expiresIn: "1h",
     });
+
     return res.status(200).json({
       status: true,
-      message: "Logged In  Successfully",
-      payload: tokenPayload,
+      message: "Logged In Successfully",
+      payload: {
+        ...tokenPayload,
+        isAdmin: isAdmin,
+      },
       token: token,
+      redirectURL: redirectURL,
     });
-    // console.log(token);
   } catch (error) {
     return res.status(500).json({
       status: false,
-      message: "error in Login",
+      message: "Error in Login",
       error: error.message,
     });
   }
 });
+
 const currentUser = asyncHandler(async (req, res) => {
   try {
     return res.json(req.user);
@@ -132,7 +168,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
       {
         userId: user._id,
       },
-      process.env.JWT_SECRET,
+      process.env.jwtSecret,
       {
         expiresIn: "1h",
       }
@@ -196,6 +232,10 @@ const resetPassword = asyncHandler(async (req, res) => {
 
 const createNewUser = asyncHandler(async (req, res) => {
   try {
+    // Check if the user has admin role
+    if (!req?.user?.roles == "admin") {
+      return res.send("Not Allowed");
+    }
     const {
       name,
       email,
@@ -206,6 +246,8 @@ const createNewUser = asyncHandler(async (req, res) => {
       cnic,
       address,
     } = req.body;
+
+    // Check if required fields are present
     if (
       !name ||
       !email ||
@@ -216,26 +258,31 @@ const createNewUser = asyncHandler(async (req, res) => {
       !cnic ||
       !address
     ) {
-      res.status(404).json({
+      return res.status(404).json({
         status: false,
-        message: "All fiedls are Required",
+        message: "All fields are required",
       });
     }
-    const emailExist = await Users.findOne({ email });
 
+    // Check if the email already exists
+    const emailExist = await Users.findOne({ email });
     if (emailExist) {
       return res.status(404).json({
         status: false,
-        message: "Email Already Exist",
+        message: "Email already exists",
       });
     }
+
+    // Check if the CNIC already exists
     const cnicExist = await Users.findOne({ cnic });
     if (cnicExist) {
-      res.status(404).json({
+      return res.status(404).json({
         status: false,
-        message: "Cnic Already Exist",
+        message: "CNIC already exists",
       });
     }
+
+    // Create a new user
     const user = new Users({
       name,
       email,
@@ -246,20 +293,32 @@ const createNewUser = asyncHandler(async (req, res) => {
       cnic,
       address,
     });
+
+    // Save the user to the database
     const result = await user.save();
+
     return res.status(200).json({
       status: true,
-      message: "User Created Successfully",
+      message: "User created successfully",
       data: result,
     });
+    // }
+    //  else {
+    // If the user doesn't have admin role, return unauthorized
+    res.status(404).json({
+      status: false,
+      message: "UNAUTHORIZED, Admin access required",
+    });
+    // }
   } catch (error) {
     return res.status(500).json({
       status: false,
-      message: "Error In creating User",
+      message: "Error in creating user",
       error: error.message,
     });
   }
 });
+
 const getUser = asyncHandler(async (req, res) => {
   try {
     const result = await Users.find();

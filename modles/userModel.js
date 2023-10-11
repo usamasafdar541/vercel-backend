@@ -18,6 +18,13 @@ const userSchema = mongoose.Schema(
     password: {
       type: String,
     },
+    roles: [
+      {
+        type: String,
+        enum: ["admin", "employee", "superadmin"],
+        default: "employee",
+      },
+    ],
     designation: {
       type: String,
     },

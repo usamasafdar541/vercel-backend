@@ -3,7 +3,7 @@ const router = express.Router();
 const userController = require("../controllers/userController");
 const validatedToken = require("../middleware/validateTokenHandler");
 router.post("/register", userController.createUser);
-router.post("/createuser",validatedToken, userController.createNewUser);
+router.post("/createuser", validatedToken, userController.createNewUser);
 router.post("/login", userController.loginUser);
 router.post("/resetpassword", userController.resetPassword);
 router.post("/forgotpassword", userController.forgotPassword);
