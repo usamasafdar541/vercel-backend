@@ -126,7 +126,7 @@ const loginUser = asyncHandler(async (req, res) => {
         isAdmin: isAdmin,
       },
       token: token,
-      redirectURL: redirectURL,
+      // redirectURL: redirectURL,
     });
   } catch (error) {
     return res.status(500).json({
@@ -233,7 +233,7 @@ const resetPassword = asyncHandler(async (req, res) => {
 const createNewUser = asyncHandler(async (req, res) => {
   try {
     // Check if the user has admin role
-    if (req?.user?.roles === "admin") {
+    if (req?.Users?.roles === "admin") {
       const {
         name,
         email,
@@ -300,10 +300,9 @@ const createNewUser = asyncHandler(async (req, res) => {
         message: "User created successfully",
         data: result,
       });
-    }
-     else {
+    } else {
       // If the user doesn't have admin role, return unauthorized
-      res.status(404).json({
+      return res.status(404).json({
         status: false,
         message: "UNAUTHORIZED, Admin access required",
       });
@@ -315,8 +314,7 @@ const createNewUser = asyncHandler(async (req, res) => {
       error: error.message,
     });
   }
-}
-);
+});
 
 const getUser = asyncHandler(async (req, res) => {
   try {
