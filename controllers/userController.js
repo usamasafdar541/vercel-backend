@@ -2,10 +2,13 @@ const Users = require("../modles/userModel");
 const asyncHandler = require("express-async-handler");
 const jwt = require("jsonwebtoken");
 const jwtSecret = process.env.JWT_SECRET;
+const otpService = require("../services/otpService");
 // const secretKey = "mySecretKey";
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcrypt");
-const { token } = require("morgan");
+// const { token } = require("morgan");
+// const { Stats } = require("fs");
+const otpStorage = {};
 
 const createUser = asyncHandler(async (req, res) => {
   try {
@@ -153,84 +156,131 @@ const transporter = nodemailer.createTransport({
     pass: "Shampy@78689",
   },
 });
-//forgot password middleware
+//forgot password middleware With Node Mailer
 
+// const forgotPassword = asyncHandler(async (req, res) => {
+//   try {
+//     const { email } = req.body;
+//     const user = await Users.findOne({ email });
+//     if (!user) {
+//       return res.status(404).json({
+//         status: false,
+//         message: "No User Found with this email",
+//       });
+//     }
+//     const resetToken = jwt.sign(
+//       {
+//         userId: user._id,
+//       },
+//       process.env.jwtSecret,
+//       {
+//         expiresIn: "1h",
+//       }
+//     );
+//     user.resetToken = resetToken;
+//     user.resetTokenExpiration = Date.now() + 3600000;
+//     await user.save();
+//     //send the reset password
+//     const resetPasswordLink = `http://your-app.com/reset-password/${resetToken}`;
+//     const mailOptions = {
+//       from: "noreply@gmail.com",
+//       to: email,
+//       subject: "Password Reset",
+//       text: `Click the following link to reset your password: ${resetPasswordLink}`,
+//     };
+//     await transporter.sendMail(mailOptions);
+//     return res.status(200).json({
+//       status: true,
+//       message: "Reset Password email send Successfully",
+//     });
+//   } catch (error) {
+//     return res.status(500).json({
+//       status: false,
+//       message: "Error in Sending Email",
+//       error: error.message,
+//     });
+//   }
+// });
+
+//oTP MIDDLEwARE
 const forgotPassword = asyncHandler(async (req, res) => {
   try {
-    const { email } = req.body;
-    const user = await Users.findOne({ email });
-    if (!user) {
-      return res.status(404).json({
-        status: false,
-        message: "No User Found with this email",
-      });
-    }
-    const resetToken = jwt.sign(
-      {
-        userId: user._id,
-      },
-      process.env.jwtSecret,
-      {
-        expiresIn: "1h",
-      }
-    );
-    user.resetToken = resetToken;
-    user.resetTokenExpiration = Date.now() + 3600000;
-    await user.save();
-    //send the reset password
-    const resetPasswordLink = `http://your-app.com/reset-password/${resetToken}`;
-    const mailOptions = {
-      from: "noreply@gmail.com",
-      to: email,
-      subject: "Password Reset",
-      text: `Click the following link to reset your password: ${resetPasswordLink}`,
-    };
-    await transporter.sendMail(mailOptions);
-    return res.status(200).json({
+    const { userId } = req.body;
+    const otp = otpService.generateOtp();
+    console.log(`OTP for user ${userId} :${otp}`);
+    otpStorage[userId] = otp;
+    console.log(`Stored OTP for user ${userId}: ${otpStorage[userId]}`);
+    res.status(200).json({
       status: true,
-      message: "Reset Password email send Successfully",
-    });
-  } catch (error) {
-    return res.status(500).json({
-      status: false,
-      message: "Error in Sending Email",
-      error: error.message,
-    });
-  }
-});
-
-const resetPassword = asyncHandler(async (req, res) => {
-  try {
-    const { resetToken, newPassword } = req.body;
-    const user = await Users.findOne({
-      resetToken,
-      resetTokenExpiration: { $gt: Date.now() },
-    });
-    if (!user) {
-      res.status(404).json({
-        status: false,
-        message: "Invalid or expired Reset Token",
-      });
-    }
-    const hash = await bcrypt.hash(newPassword, 10);
-    user.password = hash;
-    user.resetToken = null;
-    user.resetTokenExpiration = null;
-
-    await user.save();
-    return res.status(200).json({
-      status: true,
-      message: "Password Reset Successfully ",
+      message: "Password Reset Request Successfull",
+      otp: otp,
     });
   } catch (error) {
     res.status(500).json({
       status: false,
-      message: "Error in resetting Password",
+      message: "error In sending OTP",
       error: error.message,
     });
   }
 });
+// const resetPassword = asyncHandler(async (req, res) => {
+//   try {
+//     const { resetToken, newPassword } = req.body;
+//     const user = await Users.findOne({
+//       resetToken,
+//       resetTokenExpiration: { $gt: Date.now() },
+//     });
+//     if (!user) {
+//       res.status(404).json({
+//         status: false,
+//         message: "Invalid or expired Reset Token",
+//       });
+//     }
+//     const hash = await bcrypt.hash(newPassword, 10);
+//     user.password = hash;
+//     user.resetToken = null;
+//     user.resetTokenExpiration = null;
 
+//     await user.save();
+//     return res.status(200).json({
+//       status: true,
+//       message: "Password Reset Successfully ",
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       status: false,
+//       message: "Error in resetting Password",
+//       error: error.message,
+//     });
+//   }
+// });
+
+const resetPassword = asyncHandler(async (req, res) => {
+  try {
+    const { userId, otp, newPassword } = req.body;
+    console.log(`Received OTP for user ${userId}: ${otp}`);
+    console.log(`Stored OTP for user ${userId}: ${otpStorage[userId]}`);
+    if (otp === otpStorage[userId]) {
+      console.log(`password for user ${userId} reset to: ${newPassword}`);
+      delete otpStorage[userId];
+      return res.status(200).json({
+        status: true,
+        message: "Password reset successfully",
+      });
+    } else {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid OTP. Password reset failed.",
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      status: false,
+      message: "error in resetting",
+      error: error.message,
+    });
+  }
+});
 const createNewUser = asyncHandler(async (req, res) => {
   try {
     // Check if the user has admin role
