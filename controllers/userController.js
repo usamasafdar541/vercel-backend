@@ -316,7 +316,7 @@ const createNewUser = asyncHandler(async (req, res) => {
     });
   }
 });
-
+//allusres request
 const getUser = asyncHandler(async (req, res) => {
   try {
     const result = await Users.find();
