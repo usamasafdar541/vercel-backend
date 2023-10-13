@@ -262,6 +262,14 @@ const resetPassword = asyncHandler(async (req, res) => {
     const { userId, otp, newPassword } = req.body;
     console.log(`Received OTP for user ${userId}: ${otp}`);
     console.log(`Stored OTP for user ${userId}: ${otpStorage[userId]}`);
+    
+    if(!userId || !otp || !newPassword){
+      res.status(401).json({
+      status:"False",
+      message:"All fields are Required ",
+      
+      })
+    }
     if (otp === otpStorage[userId]) {
       console.log(`password for user ${userId} reset to: ${newPassword}`);
       delete otpStorage[userId];
