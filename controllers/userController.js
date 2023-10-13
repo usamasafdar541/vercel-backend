@@ -8,7 +8,6 @@ const nodemailer = require("nodemailer");
 const bcrypt = require("bcrypt");
 // const { token } = require("morgan");
 // const { Stats } = require("fs");
-const otpStorage = {};
 
 const createUser = asyncHandler(async (req, res) => {
   try {
@@ -153,7 +152,7 @@ const transporter = nodemailer.createTransport({
   secure: true,
   auth: {
     user: "usamasafdar541@gmail.com",
-    pass: "Shampy@78689",
+    pass: "",
   },
 });
 //forgot password middleware With Node Mailer
@@ -203,6 +202,8 @@ const transporter = nodemailer.createTransport({
 // });
 
 //oTP MIDDLEwARE
+const otpStorage = {};
+
 const forgotPassword = asyncHandler(async (req, res) => {
   try {
     const { userId } = req.body;
