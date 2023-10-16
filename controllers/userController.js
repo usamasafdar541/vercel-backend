@@ -272,7 +272,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
 const resetPassword = asyncHandler(async (req, res) => {
   try {
-    const { email, otp, newPassword, confrimNewPassword } = req.body;
+    const { email, otp, newPassword, confirmNewPassword } = req.body;
     console.log(`Received OTP for user ${email}: ${otp}`);
     console.log(`Stored OTP for user ${email}: ${otpStorage[email]}`);
 
@@ -282,7 +282,7 @@ const resetPassword = asyncHandler(async (req, res) => {
         message: "All fields are Required ",
       });
     }
-    if (newPassword !== confrimNewPassword) {
+    if (newPassword !== confirmNewPassword) {
       res.status(500).json({
         status: false,
         message: "Password Do not match",
@@ -491,6 +491,43 @@ const deleteUser = asyncHandler(async (req, res) => {
     });
   }
 });
+
+const UpdatePassword = asyncHandler(async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    // const id = req.params.id;
+    const id = req.user.id;
+    const user = await Users.findById(id);
+    console.log(`user with this ${id} is ${user}`);
+    if (!user) {
+      return res.status(400).json({
+        status: false,
+        message: "No User Found with this id",
+      });
+    }
+    const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+    if (!isPasswordValid) {
+      return res.status(400).json({
+        status: false,
+        message: "Invalid Current Password",
+      });
+    }
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await Users.findByIdAndUpdate(id, {
+      password: hashed,
+    });
+    return res.status(200).json({
+      status: true,
+      message: "Password Update Successfull",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: false,
+      message: "Error In Updating Password",
+      error: error.message,
+    });
+  }
+});
 module.exports = {
   createUser,
   loginUser,
@@ -500,6 +537,7 @@ module.exports = {
   createNewUser,
   getUserById,
   forgotPassword,
+  UpdatePassword,
   getUser,
   resetPassword,
 };

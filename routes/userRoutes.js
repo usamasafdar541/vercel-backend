@@ -12,6 +12,12 @@ router.get("/allusers", userController.getUser);
 router.get("/:id", userController.getUserById);
 // router.get("/:id", userController.singleUser);
 router.put("/update/:id", userController.updateUser);
+router.put(
+  "/updatepassword/:id",
+  validatedToken,
+  userController.UpdatePassword
+);
+
 router.delete("/delete/:id", userController.deleteUser);
 
 module.exports = router;
