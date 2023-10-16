@@ -153,7 +153,7 @@ const transporter = nodemailer.createTransport({
   secure: true,
   auth: {
     user: "usamasafdar541@gmail.com",
-  pass:"",
+    pass: "",
   },
 });
 //forgot password middleware With Node Mailer
@@ -207,15 +207,28 @@ const otpStorage = {};
 
 const forgotPassword = asyncHandler(async (req, res) => {
   try {
-    const { userId } = req.body;
+    const { email } = req.body;
+    const user = await Users.findOne({ email });
+    if (!user) {
+      res.status(404).json({
+        status: false,
+        message: "No User Exist with this email",
+      });
+    }
     const otp = otpService.generateOtp();
-    console.log(`OTP for user ${userId} :${otp}`);
-    otpStorage[userId] = otp;
-    console.log(`Stored OTP for user ${userId}: ${otpStorage[userId]}`);
+    console.log(`OTP for user ${email} :${otp}`);
+    otpStorage[email] = otp;
+    console.log(`Stored OTP for user ${email}: ${otpStorage[email]}`);
+    const payload = {
+      name: user.name,
+      email: user.email,
+      password: user.password,
+    };
     res.status(200).json({
       status: true,
       message: "Password Reset Request Successfull",
       otp: otp,
+      data: payload,
     });
   } catch (error) {
     res.status(500).json({
@@ -259,23 +272,33 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
 const resetPassword = asyncHandler(async (req, res) => {
   try {
-    const { userId, otp, newPassword } = req.body;
-    console.log(`Received OTP for user ${userId}: ${otp}`);
-    console.log(`Stored OTP for user ${userId}: ${otpStorage[userId]}`);
-    
-    if(!userId || !otp || !newPassword){
+    const { email, otp, newPassword, confrimNewPassword } = req.body;
+    console.log(`Received OTP for user ${email}: ${otp}`);
+    console.log(`Stored OTP for user ${email}: ${otpStorage[email]}`);
+
+    if (!email || !otp || !newPassword) {
       res.status(401).json({
-      status:"False",
-      message:"All fields are Required ",
-      
-      })
+        status: "False",
+        message: "All fields are Required ",
+      });
     }
-    if (otp === otpStorage[userId]) {
-      console.log(`password for user ${userId} reset to: ${newPassword}`);
-      delete otpStorage[userId];
+    if (newPassword !== confrimNewPassword) {
+      res.status(500).json({
+        status: false,
+        message: "Password Do not match",
+      });
+    }
+    const payload = {
+      email: Users.email,
+      name: Users.name,
+    };
+    if (otp === otpStorage[email]) {
+      console.log(`password for user ${email} reset to: ${newPassword}`);
+      delete otpStorage[email];
       return res.status(200).json({
         status: true,
         message: "Password reset successfully",
+        data: payload,
       });
     } else {
       return res.status(400).json({
@@ -379,8 +402,8 @@ const createNewUser = asyncHandler(async (req, res) => {
 //allusres request
 const getUser = asyncHandler(async (req, res) => {
   try {
-    const result = await userServices.getAllUsers();
-    console.log(result,"result from the service");
+    const result = await Users.find();
+    console.log(result, "result from the service");
     if (result) {
       res.status(200).json({
         status: true,
