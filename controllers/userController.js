@@ -96,6 +96,8 @@ const loginUser = asyncHandler(async (req, res) => {
         message: "No User Found with this email",
       });
     }
+    console.log("Password received in request:", password);
+    console.log("Password from user document:", user.password);
 
     const matchPassword = await bcrypt.compare(password, user.password);
 
@@ -121,7 +123,8 @@ const loginUser = asyncHandler(async (req, res) => {
     const token = jwt.sign(tokenPayload, jwtSecret, {
       expiresIn: "1h",
     });
-
+    console.log("Password:", password);
+    console.log("User Password:", user.password);
     return res.status(200).json({
       status: true,
       message: "Logged In Successfully",
@@ -146,57 +149,104 @@ const currentUser = asyncHandler(async (req, res) => {
     return res.json(req.user);
   } catch (error) {}
 });
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: "usamasafdar541@gmail.com",
-    pass: "",
-  },
-});
+
 //forgot password middleware With Node Mailer
 
 // const forgotPassword = asyncHandler(async (req, res) => {
 //   try {
 //     const { email } = req.body;
 //     const user = await Users.findOne({ email });
+
 //     if (!user) {
 //       return res.status(404).json({
 //         status: false,
 //         message: "No User Found with this email",
 //       });
 //     }
+
+//     // Generate a reset token
 //     const resetToken = jwt.sign(
 //       {
 //         userId: user._id,
 //       },
-//       process.env.jwtSecret,
+//       // process.env.jwtSecret,
+//       jwtSecret,
 //       {
 //         expiresIn: "1h",
 //       }
 //     );
+
+//     // Set user properties for password reset
 //     user.resetToken = resetToken;
-//     user.resetTokenExpiration = Date.now() + 3600000;
+//     user.resetTokenExpiration = Date.now() + 3600000; // 1 hour expiration
 //     await user.save();
-//     //send the reset password
+
+//     // Create the reset password link after generating the token
 //     const resetPasswordLink = `http://your-app.com/reset-password/${resetToken}`;
+
+//     // Setup the email transport configuration
+//     const transporter = nodemailer.createTransport({
+//       host: 'smtp.ethereal.email',
+//       port: 587,
+//       auth: {
+//         user: 'carlie21@ethereal.email',
+//         pass: 'UGzt3jXxQSgEvURb9u',
+//       },
+//     });
+
+//     // Mail options with the reset password link
 //     const mailOptions = {
 //       from: "noreply@gmail.com",
-//       to: email,
-//       subject: "Password Reset",
+//       to: "usamasafdar541@gmail.com",
+//       subject: "Password Reset Link",
 //       text: `Click the following link to reset your password: ${resetPasswordLink}`,
 //     };
+
+//     // Send the reset password email
 //     await transporter.sendMail(mailOptions);
+
 //     return res.status(200).json({
 //       status: true,
-//       message: "Reset Password email send Successfully",
+//       message: "Reset Password email sent successfully",
 //     });
 //   } catch (error) {
 //     return res.status(500).json({
 //       status: false,
 //       message: "Error in Sending Email",
+//       error: error.message,
+//     });
+//   }
+// });
+
+// Reset Password Node mailer
+
+// const resetPassword = asyncHandler(async (req, res) => {
+//   try {
+//     const { resetToken, newPassword } = req.body;
+//     const user = await Users.findOne({
+//       resetToken,
+//       resetTokenExpiration: { $gt: Date.now() },
+//     });
+//     if (!user) {
+//       res.status(404).json({
+//         status: false,
+//         message: "Invalid or expired Reset Token",
+//       });
+//     }
+// const hash = rawait bcrypt.hash(newPassword, 10);
+//     user.password = hash;
+//     user.resetToken = null;
+//     user.resetTokenExpiration = null;
+
+//     await user.save();
+//     return res.status(200).json({
+//       status: true,
+//       message: "Password Reset Successfully ",
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       status: false,
+//       message: "Error in resetting Password",
 //       error: error.message,
 //     });
 //   }
@@ -238,37 +288,6 @@ const forgotPassword = asyncHandler(async (req, res) => {
     });
   }
 });
-// const resetPassword = asyncHandler(async (req, res) => {
-//   try {
-//     const { resetToken, newPassword } = req.body;
-//     const user = await Users.findOne({
-//       resetToken,
-//       resetTokenExpiration: { $gt: Date.now() },
-//     });
-//     if (!user) {
-//       res.status(404).json({
-//         status: false,
-//         message: "Invalid or expired Reset Token",
-//       });
-//     }
-//     const hash = await bcrypt.hash(newPassword, 10);
-//     user.password = hash;
-//     user.resetToken = null;
-//     user.resetTokenExpiration = null;
-
-//     await user.save();
-//     return res.status(200).json({
-//       status: true,
-//       message: "Password Reset Successfully ",
-//     });
-//   } catch (error) {
-//     res.status(500).json({
-//       status: false,
-//       message: "Error in resetting Password",
-//       error: error.message,
-//     });
-//   }
-// });
 
 const resetPassword = asyncHandler(async (req, res) => {
   try {
@@ -288,17 +307,16 @@ const resetPassword = asyncHandler(async (req, res) => {
         message: "Password Do not match",
       });
     }
-    const payload = {
-      email: Users.email,
-      name: Users.name,
-    };
+
     if (otp === otpStorage[email]) {
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+      await Users.findOneAndUpdate({ email }, { password: hashedNewPassword });
       console.log(`password for user ${email} reset to: ${newPassword}`);
       delete otpStorage[email];
       return res.status(200).json({
         status: true,
         message: "Password reset successfully",
-        data: payload,
+        // data: payload,
       });
     } else {
       return res.status(400).json({
