@@ -71,6 +71,12 @@ const userSchema = mongoose.Schema(
     newPassword: {
       type: String,
     },
+    checkInOut: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Checks",
+      },
+    ],
   },
   {
     timestamps: true,

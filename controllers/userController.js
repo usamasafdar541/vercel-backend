@@ -4,9 +4,9 @@ const jwt = require("jsonwebtoken");
 const jwtSecret = process.env.JWT_SECRET;
 const otpService = require("../services/otpService");
 // const secretKey = "mySecretKey";
-const nodemailer = require("nodemailer");
+// const nodemailer = require("nodemailer");
 const bcrypt = require("bcrypt");
-const userServices = require("../services/user.services");
+// const userServices = require("../services/user.services");
 // const { token } = require("morgan");
 // const { Stats } = require("fs");
 
