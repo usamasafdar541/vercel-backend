@@ -4,18 +4,136 @@ const mongoose = require("mongoose");
 const Checks = require("../modles/checkInOutModel");
 const asyncHandler = require("express-async-handler");
 
+// const checkInUser = asyncHandler(async (req, res) => {
+//     try {
+//       const { userId } = req.body;
+//       console.log(userId, "user id provided ");
+
+//       const currentDate = new Date().toISOString().split("T")[0];
+
+//       // Check if the user has already checked in today
+//       const existingCheckIn = await Checks.findOne({
+//         userId,
+//         checkOutTime: null,
+//         checkInTime: { $gte: new Date(currentDate) },
+//       });
+
+//       if (existingCheckIn) {
+//         console.log("User has already checked in today:", existingCheckIn);
+//         return res.status(200).json({
+//           status: false,
+//           message: "User has already checked in today",
+//         });
+//       }
+
+//       // Find an existing check-in record for the user
+//       let checkIn = await Checks.findOne({ userId, checkOutTime: null });
+
+//       if (!checkIn) {
+//         // If no existing check-in record, create a new one
+//         checkIn = new Checks({ userId, checkInTime: new Date() });
+//         console.log("User is checked in:", checkIn);
+//         await checkIn.save();
+//         return res.status(200).json({
+//           status: true,
+//           message: "Successfully Checked In",
+//           data: checkIn,
+//         });
+//       } else {
+//         console.log("User is already checked in:", checkIn);
+//         return res.status(200).json({
+//           status: false,
+//           message: "User is already checked in",
+//           data: checkIn,
+//         });
+//       }
+//     } catch (error) {
+//       return res.status(500).json({
+//         status: false,
+//         message: "Error in Checking In",
+//         error: error.message,
+//       });
+//     }
+//   });
+
+// const checkOutuser = asyncHandler(async (req, res) => {
+//   try {
+//     const { userId } = req.body;
+//     // const { userId, paused } = req.body;
+
+//     // Validate userId format
+//     if (!mongoose.Types.ObjectId.isValid(userId)) {
+//       return res.status(400).json({
+//         status: false,
+//         message: "Invalid userId format",
+//       });
+//     }
+
+//     const checkOutTime = new Date();
+//     const checkOut = await Checks.findOne({ userId, checkOutTime: null });
+//     console.log("checkout USer details", checkOut);
+//     if (!checkOut) {
+//       return res.status(400).json({
+//         status: false,
+//         message: "User Has Not Checked In",
+//       });
+//     }
+
+//     checkOut.checkOutTime = checkOutTime;
+//     // if (pause) {
+//     //   checkOut.pause = true;
+//     // } else {
+//     //   checkOut.paused = false;
+//     //   checkOut.checkOutTime = checkOutTime;
+//     // }
+//     await checkOut.save();
+//     return res.status(200).json({
+//       status: true,
+//       //   message: pause? "Successfully paused" : "Checked Out",
+//       message: "Successfully Checked Out",
+//       data: checkOut,
+//       id: checkOut.id, // Assuming you want to include the ID in the response
+//     });
+//   } catch (error) {
+//     console.error("Error in Checking Out:", error);
+//     return res.status(500).json({
+//       status: false,
+//       message: "Internal Server Error",
+//       error: error.message,
+//     });
+//   }
+// });
 const checkInUser = asyncHandler(async (req, res) => {
   try {
     const { userId } = req.body;
     console.log(userId, "user id provided ");
-    const checkInTime = new Date();
+
+    const currentDate = new Date().toISOString().split("T")[0];
+
+    // Check if the user has already checked in today
+    const existingCheckIn = await Checks.findOne({
+      userId,
+      checkOutTime: null,
+      checkInTime: { $gte: new Date(currentDate) },
+    });
+
+    if (existingCheckIn) {
+      console.log("User has already checked in today:", existingCheckIn);
+      return res.status(200).json({
+        status: false,
+        message: "User has already checked in today",
+      });
+    }
 
     // Find an existing check-in record for the user
-    let checkIn = await Checks.findOne({ userId, checkOutTime: null });
+    let checkIn = await Checks.findOne({
+      userId,
+      checkInTime: { $gte: new Date(currentDate) },
+    });
 
     if (!checkIn) {
       // If no existing check-in record, create a new one
-      checkIn = await new Checks({ userId, checkInTime });
+      checkIn = new Checks({ userId, checkInTime: new Date() });
       console.log("User is checked in:", checkIn);
       await checkIn.save();
       return res.status(200).json({
@@ -25,6 +143,11 @@ const checkInUser = asyncHandler(async (req, res) => {
       });
     } else {
       console.log("User is already checked in:", checkIn);
+      return res.status(200).json({
+        status: false,
+        message: "User is already checked in",
+        data: checkIn,
+      });
     }
   } catch (error) {
     return res.status(500).json({
@@ -46,10 +169,22 @@ const checkOutuser = asyncHandler(async (req, res) => {
         message: "Invalid userId format",
       });
     }
-
+    const currentDate = new Date().toISOString().split("T")[0];
     const checkOutTime = new Date();
+    const existingCheckOut = await Checks.findOne({
+      userId,
+      checkOutTime: { $gte: new Date(currentDate) },
+    });
+
+    if (existingCheckOut) {
+      return res.status(200).json({
+        status: false,
+        message: "User has already checked out today",
+      });
+    }
     const checkOut = await Checks.findOne({ userId, checkOutTime: null });
-    console.log("checkout USer details", checkOut);
+    console.log("checkout User details", checkOut);
+
     if (!checkOut) {
       return res.status(400).json({
         status: false,
@@ -64,7 +199,7 @@ const checkOutuser = asyncHandler(async (req, res) => {
       status: true,
       message: "Successfully Checked Out",
       data: checkOut,
-      id: checkOut.id, // Assuming you want to include the ID in the response
+      id: checkOut.id,
     });
   } catch (error) {
     console.error("Error in Checking Out:", error);
