@@ -1,5 +1,5 @@
 const express = require("express");
-const morgan = require('morgan');
+const morgan = require("morgan");
 const dotEnv = require("dotenv").config();
 const cors = require("cors");
 
@@ -22,7 +22,7 @@ const port = process.env.PORT || 3000;
 // app.use(corsMiddleware);
 require("./config/db");
 app.use(express.json());
-app.use(morgan('combined'));
+app.use(morgan("combined"));
 
 app.use(express.urlencoded({ extended: true }));
 app.use(bodyParser.json());

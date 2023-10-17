@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const userController = require("../controllers/userController");
+const checkController = require("../controllers/checkInOutController");
 const validatedToken = require("../middleware/validateTokenHandler");
 router.post("/register", userController.createUser);
 router.post("/createuser", userController.createNewUser);
@@ -17,7 +18,12 @@ router.put(
   validatedToken,
   userController.UpdatePassword
 );
-
 router.delete("/delete/:id", userController.deleteUser);
+
+//Checks controllers
+
+router.post("/checkin", validatedToken, checkController.checkInUser);
+router.post("/checkout", validatedToken, checkController.checkOutuser);
+router.get("/timelog/:id", validatedToken, checkController.timeLogged);
 
 module.exports = router;
