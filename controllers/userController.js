@@ -9,77 +9,113 @@ const bcrypt = require("bcrypt");
 // const userServices = require("../services/user.services");
 // const { token } = require("morgan");
 // const { Stats } = require("fs");
+// admin users
+
+const addAdmin = asyncHandler(async (req, res) => {
+  try {
+    const { email, name, password, roles } = req.body;
+
+    if (!email || !name || !password) {
+      return res.status(400).json({
+        status: false,
+        message: "All Credentials Are Required",
+      });
+    }
+    const adminExist = await Users.findOne({ email, roles: ["admin"] });
+    if (adminExist) {
+      return res.status(400).json({
+        status: false,
+        message: "Admin already exists",
+      });
+    }
+
+    // Password Hashing
+    const hash = await bcrypt.hash(password, 10);
+    const adminUser = new Users({
+      email: "Admin1@gmail.com",
+      name: "Admin",
+      password: hash, // Store the hashed password
+      roles: ["admin"],
+    });
+
+    await adminUser.save();
+
+    res.status(201).json({
+      status: true,
+      message: "Admin created successfully",
+      data: adminUser,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: false,
+      message: "Cannot create Admin",
+      error: error.message,
+    });
+  }
+});
 
 const createUser = asyncHandler(async (req, res) => {
   try {
-    const { email, name, password, confirmPassword, roles } = req.body;
-    console.log(req.body);
+    const { email, name, password, confirmPassword } = req.body;
+
     if (!email || !name || !password || !confirmPassword) {
       return res.status(400).json({
+        status: false,
         message: "Fields are required",
       });
     }
-    if (password != confirmPassword) {
+
+    if (password !== confirmPassword) {
       return res.status(400).json({
         status: false,
-        message: "Password And confirm Password do not match",
+        message: "Password and confirm password do not match",
       });
     }
+
     if (password.length < 7) {
-      res.status(400).json({
-        message: "Password Must be more than 7 charachters Long",
+      return res.status(400).json({
+        status: false,
+        message: "Password must be more than 7 characters long",
       });
     }
+
     const userExist = await Users.findOne({ email });
+
     if (userExist) {
       return res.status(400).json({
         status: false,
-        message: "User Already exist",
+        message: "User already exists",
       });
     }
-    //password HAshing
+
+    // Password Hashing
     const hash = await bcrypt.hash(password, 10);
-    let user;
-    // if (roles === "superadmin") {
-    // const requestingUser = req.user;
-    // if (!requestingUser || requestingUser.roles !== "superadmin") {
-    //   res.status(403).json({
-    //     status: false,
-    //     message: "ONLY SUPERADMIN CAN CREATE AN ADMIN",
-    //   });
-    //   user = await new Users({
-    //     email,
-    //     name,
-    //     password: hash,
-    //     roles: ["admin"],
-    //   });
-    // }
-    // } else {
-    user = await new Users({
+
+    const user = await new Users({
       email,
       name,
       password: hash,
       roles: ["employee"],
     });
-    // }
+
     const result = await user.save();
+
     const payload = {
       userId: result._id,
       userEmail: result.email,
       userName: result.name,
       roles: result.roles,
     };
-    if (result) {
-      return res.status(200).json({
-        status: true,
-        message: "User Created Successfully",
-        data: payload,
-      });
-    }
+
+    return res.status(201).json({
+      status: true,
+      message: "User created successfully",
+      data: payload,
+    });
   } catch (error) {
-    return res.status(409).json({
+    return res.status(500).json({
       status: false,
-      message: "Error in creating User",
+      message: "Error in creating user",
       error: error.message,
     });
   }
@@ -93,52 +129,47 @@ const loginUser = asyncHandler(async (req, res) => {
     if (!user) {
       return res.status(404).json({
         status: false,
-        message: "No User Found with this email",
+        message: "No user found with this email",
       });
     }
-    console.log("Password received in request:", password);
-    console.log("Password from user document:", user.password);
 
     const matchPassword = await bcrypt.compare(password, user.password);
 
     if (!matchPassword) {
       return res.status(401).json({
         status: false,
-        message: "Invalid Credentials",
+        message: "Invalid credentials",
       });
     }
-
+    const isAdmin = user.roles.includes("admin");
     const tokenPayload = {
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
-        // roles: user.roles,
+        roles: user.roles,
+        isAdmin: isAdmin,
       },
     };
-
-    // const isAdmin = user.roles === "admin";
-    // const redirectURL = isAdmin ? "/admin-dashboard" : "/employee-dashboard";
 
     const token = jwt.sign(tokenPayload, jwtSecret, {
       expiresIn: "1h",
     });
-    console.log("Password:", password);
-    console.log("User Password:", user.password);
-    return res.status(200).json({
+
+    const responseData = {
       status: true,
-      message: "Logged In Successfully",
-      payload: {
-        ...tokenPayload,
-        // isAdmin: isAdmin,
+      message: "Logged in successfully",
+      data: {
+        userType: isAdmin ? "admin" : "user",
+        userInfo: tokenPayload,
+        token: token,
       },
-      token: token,
-      // redirectURL: redirectURL,
-    });
+    };
+    return res.status(200).json(responseData);
   } catch (error) {
     return res.status(500).json({
       status: false,
-      message: "Error in Login",
+      message: "Error in login",
       error: error.message,
     });
   }
@@ -335,80 +366,80 @@ const resetPassword = asyncHandler(async (req, res) => {
 const createNewUser = asyncHandler(async (req, res) => {
   try {
     // Check if the user has admin role
-    // if (req?.Users?.roles === "admin") {
-    const {
-      name,
-      email,
-      designation,
-      department,
-      gender,
-      phone,
-      cnic,
-      address,
-    } = req.body;
+    if (req?.user?.roles.includes("admin")) {
+      const {
+        name,
+        email,
+        designation,
+        department,
+        gender,
+        phone,
+        cnic,
+        address,
+      } = req.body;
 
-    // Check if required fields are present
-    if (
-      !name ||
-      !email ||
-      !designation ||
-      !department ||
-      !gender ||
-      !phone ||
-      !cnic ||
-      !address
-    ) {
+      // Check if required fields are present
+      if (
+        !name ||
+        !email ||
+        !designation ||
+        !department ||
+        !gender ||
+        !phone ||
+        !cnic ||
+        !address
+      ) {
+        return res.status(404).json({
+          status: false,
+          message: "All fields are required",
+        });
+      }
+
+      // Check if the email already exists
+      const emailExist = await Users.findOne({ email });
+      if (emailExist) {
+        return res.status(404).json({
+          status: false,
+          message: "Email already exists",
+        });
+      }
+
+      // Check if the CNIC already exists
+      const cnicExist = await Users.findOne({ cnic });
+      if (cnicExist) {
+        return res.status(404).json({
+          status: false,
+          message: "CNIC already exists",
+        });
+      }
+
+      // Create a new user
+      const user = new Users({
+        name,
+        email,
+        designation,
+        department,
+        gender,
+        phone,
+        cnic,
+        address,
+      });
+
+      // Save the user to the database
+      const result = await user.save();
+
+      return res.status(200).json({
+        status: true,
+        message: "User created successfully",
+        data: result,
+      });
+    } else {
+      // If the user doesn't have admin role, return unauthorized
       return res.status(404).json({
         status: false,
-        message: "All fields are required",
+        message: "UNAUTHORIZED, Admin access required",
       });
     }
-
-    // Check if the email already exists
-    const emailExist = await Users.findOne({ email });
-    if (emailExist) {
-      return res.status(404).json({
-        status: false,
-        message: "Email already exists",
-      });
-    }
-
-    // Check if the CNIC already exists
-    const cnicExist = await Users.findOne({ cnic });
-    if (cnicExist) {
-      return res.status(404).json({
-        status: false,
-        message: "CNIC already exists",
-      });
-    }
-
-    // Create a new user
-    const user = new Users({
-      name,
-      email,
-      designation,
-      department,
-      gender,
-      phone,
-      cnic,
-      address,
-    });
-
-    // Save the user to the database
-    const result = await user.save();
-
-    return res.status(200).json({
-      status: true,
-      message: "User created successfully",
-      data: result,
-    });
-    // } else {
-    // If the user doesn't have admin role, return unauthorized
-    return res.status(404).json({
-      status: false,
-      message: "UNAUTHORIZED, Admin access required",
-    });
-    // }
   } catch (error) {
     return res.status(500).json({
       status: false,
@@ -420,7 +451,8 @@ const createNewUser = asyncHandler(async (req, res) => {
 //allusres request
 const getUser = asyncHandler(async (req, res) => {
   try {
-    const result = await Users.find();
+    const result = await Users.find({ roles: { $ne: "admin" } });
+    //roles:{$ne:"admin"} means Roles not equal to admin
     console.log(result, "result from the service");
     if (result) {
       res.status(200).json({
@@ -546,6 +578,57 @@ const UpdatePassword = asyncHandler(async (req, res) => {
     });
   }
 });
+
+const deactivateUser = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const user = await Users.findById(userId);
+    if (!user) {
+      res.status(404).json({
+        status: false,
+        message: "No USer found with this id ",
+      });
+    }
+    user.status = "deactivated";
+    await user.save();
+    res.status(201).json({
+      status: true,
+      message: "User Is Deactivated",
+      data: user,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: false,
+      message: "Error in account deactivation",
+      error: error.message,
+    });
+  }
+});
+const activateUser = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const user = await Users.findById(userId);
+    if (!user) {
+      res.status(404).json({
+        status: false,
+        message: "No USer found with this id ",
+      });
+    }
+    user.status = "activated";
+    await user.save();
+    res.status(201).json({
+      status: true,
+      message: "User Is activated",
+      data: user,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: false,
+      message: "Error in account activation",
+      error: error.message,
+    });
+  }
+});
 module.exports = {
   createUser,
   loginUser,
@@ -558,4 +641,7 @@ module.exports = {
   UpdatePassword,
   getUser,
   resetPassword,
+  addAdmin,
+  deactivateUser,
+  activateUser,
 };

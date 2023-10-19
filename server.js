@@ -18,7 +18,7 @@ const contactRoutes = require("./routes/contactRoutes");
 const errorHandler = require("./middleware/errorHandler");
 const userRoutes = require("./routes/userRoutes");
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3001;
 // app.use(corsMiddleware);
 require("./config/db");
 app.use(express.json());
