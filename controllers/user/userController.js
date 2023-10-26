@@ -1,83 +1,53 @@
-const Users = require("../modles/userModel");
+const Users = require("../../modles/userModel");
 const asyncHandler = require("express-async-handler");
 const jwt = require("jsonwebtoken");
 const jwtSecret = process.env.JWT_SECRET;
-const otpService = require("../services/otpService");
+const otpService = require("../../services/otpService");
 // const secretKey = "mySecretKey";
 // const nodemailer = require("nodemailer");
 const bcrypt = require("bcrypt");
+const {
+  registerUserValidation,
+  loginUserValidation,
+  resetPasswordValidations,
+  updatePasswordValidation,
+} = require("../../middleware/validator/validations");
 // const userServices = require("../services/user.services");
 // const { token } = require("morgan");
 // const { Stats } = require("fs");
 // admin users
 
-const addAdmin = asyncHandler(async (req, res) => {
+const registerUser = asyncHandler(async (req, res) => {
   try {
-    const { email, name, password, roles } = req.body;
-
-    if (!email || !name || !password) {
+    const { error } = registerUserValidation.validate(req.body);
+    if (error) {
       return res.status(400).json({
         status: false,
-        message: "All Credentials Are Required",
+        message: error.details[0].message,
       });
     }
-    const adminExist = await Users.findOne({ email, roles: ["admin"] });
-    if (adminExist) {
-      return res.status(400).json({
-        status: false,
-        message: "Admin already exists",
-      });
-    }
-
-    // Password Hashing
-    const hash = await bcrypt.hash(password, 10);
-    const adminUser = new Users({
-      email: "Admin1@gmail.com",
-      name: "Admin",
-      password: hash, // Store the hashed password
-      roles: ["admin"],
-    });
-
-    await adminUser.save();
-
-    res.status(201).json({
-      status: true,
-      message: "Admin created successfully",
-      data: adminUser,
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: false,
-      message: "Cannot create Admin",
-      error: error.message,
-    });
-  }
-});
-
-const createUser = asyncHandler(async (req, res) => {
-  try {
     const { email, name, password, confirmPassword } = req.body;
 
-    if (!email || !name || !password || !confirmPassword) {
-      return res.status(400).json({
-        status: false,
-        message: "Fields are required",
-      });
-    }
+    // if (!email || !name || !password || !confirmPassword) {
+    //   return res.status(400).json({
+    //     status: false,
+    //     message: "Fields are required",
+    //   });
+    // }
 
-    if (password !== confirmPassword) {
-      return res.status(400).json({
-        status: false,
-        message: "Password and confirm password do not match",
-      });
-    }
+    // if (password !== confirmPassword) {
+    //   return res.status(400).json({
+    //     status: false,
+    //     message: "Password and confirm password do not match",
+    //   });
+    // }
 
-    if (password.length < 7) {
-      return res.status(400).json({
-        status: false,
-        message: "Password must be more than 7 characters long",
-      });
-    }
+    // if (password.length < 7) {
+    //   return res.status(400).json({
+    //     status: false,
+    //     message: "Password must be more than 7 characters long",
+    //   });
+    // }
 
     const userExist = await Users.findOne({ email });
 
@@ -123,6 +93,13 @@ const createUser = asyncHandler(async (req, res) => {
 
 const loginUser = asyncHandler(async (req, res) => {
   try {
+    const { error } = loginUserValidation.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        status: false,
+        message: error.details[0].message,
+      });
+    }
     const { email, password } = req.body;
     const user = await Users.findOne({ email });
 
@@ -288,6 +265,13 @@ const otpStorage = {};
 
 const forgotPassword = asyncHandler(async (req, res) => {
   try {
+    const { error } = forgotPasswordValidation.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        status: false,
+        message: error.details[0].message,
+      });
+    }
     const { email } = req.body;
     const user = await Users.findOne({ email });
     if (!user) {
@@ -322,16 +306,23 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
 const resetPassword = asyncHandler(async (req, res) => {
   try {
+    const { error } = resetPasswordValidations.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        status: false,
+        message: error.details[0].message,
+      });
+    }
     const { email, otp, newPassword, confirmNewPassword } = req.body;
     console.log(`Received OTP for user ${email}: ${otp}`);
     console.log(`Stored OTP for user ${email}: ${otpStorage[email]}`);
 
-    if (!email || !otp || !newPassword) {
-      res.status(401).json({
-        status: "False",
-        message: "All fields are Required ",
-      });
-    }
+    // if (!email || !otp || !newPassword) {
+    //   res.status(401).json({
+    //     status: "False",
+    //     message: "All fields are Required ",
+    //   });
+    // }
     if (newPassword !== confirmNewPassword) {
       res.status(500).json({
         status: false,
@@ -363,91 +354,7 @@ const resetPassword = asyncHandler(async (req, res) => {
     });
   }
 });
-const createNewUser = asyncHandler(async (req, res) => {
-  try {
-    // Check if the user has admin role
-    if (req?.user?.roles.includes("admin")) {
-      const {
-        name,
-        email,
-        designation,
-        department,
-        gender,
-        phone,
-        cnic,
-        address,
-      } = req.body;
 
-      // Check if required fields are present
-      if (
-        !name ||
-        !email ||
-        !designation ||
-        !department ||
-        !gender ||
-        !phone ||
-        !cnic ||
-        !address
-      ) {
-        return res.status(404).json({
-          status: false,
-          message: "All fields are required",
-        });
-      }
-
-      // Check if the email already exists
-      const emailExist = await Users.findOne({ email });
-      if (emailExist) {
-        return res.status(404).json({
-          status: false,
-          message: "Email already exists",
-        });
-      }
-
-      // Check if the CNIC already exists
-      const cnicExist = await Users.findOne({ cnic });
-      if (cnicExist) {
-        return res.status(404).json({
-          status: false,
-          message: "CNIC already exists",
-        });
-      }
-
-      // Create a new user
-      const user = new Users({
-        name,
-        email,
-        designation,
-        department,
-        gender,
-        phone,
-        cnic,
-        address,
-      });
-
-      // Save the user to the database
-      const result = await user.save();
-
-      return res.status(200).json({
-        status: true,
-        message: "User created successfully",
-        data: result,
-      });
-    } else {
-      // If the user doesn't have admin role, return unauthorized
-      return res.status(404).json({
-        status: false,
-        message: "UNAUTHORIZED, Admin access required",
-      });
-    }
-  } catch (error) {
-    return res.status(500).json({
-      status: false,
-      message: "Error in creating user",
-      error: error.message,
-    });
-  }
-});
 //allusres request
 const getUser = asyncHandler(async (req, res) => {
   try {
@@ -489,61 +396,16 @@ const getUserById = asyncHandler(async (req, res) => {
     });
   }
 });
-const updateUser = asyncHandler(async (req, res) => {
-  try {
-    const id = req.params.id;
-    const {
-      name,
-      email,
-      designation,
-      department,
-      gender,
-      phone,
-      cnic,
-      address,
-    } = req.body;
-
-    const result = await Users.findByIdAndUpdate(
-      id,
-      { name, email, designation, department, gender, phone, cnic, address },
-      { new: true }
-    );
-    return res.status(200).json({
-      status: true,
-      message: "User Updated Successfully",
-      data: result,
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: false,
-      message: "Error in updating User",
-      error: error.message,
-    });
-  }
-});
-
-const deleteUser = asyncHandler(async (req, res) => {
-  try {
-    const id = req.params.id;
-    const result = await Users.findByIdAndDelete(id);
-    if (result) {
-      res.status(200).json({
-        status: true,
-        message: "User with this id is Deleted Successfully",
-        data: result,
-      });
-    }
-  } catch (error) {
-    res.status(500).json({
-      status: false,
-      message: "Error in deleting User ",
-      error: error.message,
-    });
-  }
-});
 
 const UpdatePassword = asyncHandler(async (req, res) => {
   try {
+    const { error } = updatePasswordValidation.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        status: false,
+        message: error.details[0].message,
+      });
+    }
     const { oldPassword, newPassword } = req.body;
     // const id = req.params.id;
     const id = req.user.id;
@@ -579,69 +441,13 @@ const UpdatePassword = asyncHandler(async (req, res) => {
   }
 });
 
-const deactivateUser = asyncHandler(async (req, res) => {
-  try {
-    const userId = req.params.id;
-    const user = await Users.findById(userId);
-    if (!user) {
-      res.status(404).json({
-        status: false,
-        message: "No USer found with this id ",
-      });
-    }
-    user.status = "deactivated";
-    await user.save();
-    res.status(201).json({
-      status: true,
-      message: "User Is Deactivated",
-      data: user,
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: false,
-      message: "Error in account deactivation",
-      error: error.message,
-    });
-  }
-});
-const activateUser = asyncHandler(async (req, res) => {
-  try {
-    const userId = req.params.id;
-    const user = await Users.findById(userId);
-    if (!user) {
-      res.status(404).json({
-        status: false,
-        message: "No USer found with this id ",
-      });
-    }
-    user.status = "activated";
-    await user.save();
-    res.status(201).json({
-      status: true,
-      message: "User Is activated",
-      data: user,
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: false,
-      message: "Error in account activation",
-      error: error.message,
-    });
-  }
-});
 module.exports = {
-  createUser,
+  registerUser,
   loginUser,
   currentUser,
-  updateUser,
-  deleteUser,
-  createNewUser,
   getUserById,
   forgotPassword,
   UpdatePassword,
   getUser,
   resetPassword,
-  addAdmin,
-  deactivateUser,
-  activateUser,
 };
