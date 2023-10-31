@@ -6,14 +6,6 @@ const otpService = require("../../services/otpService");
 // const secretKey = "mySecretKey";
 // const nodemailer = require("nodemailer");
 const bcrypt = require("bcrypt");
-
-const {
-  registerUserValidation,
-  loginUserValidation,
-  forgotPasswordValidation,
-  resetPasswordValidations,
-  updatePasswordValidation,
-} = require("../../middleware/validator/validations");
 // const userServices = require("../services/user.services");
 // const { token } = require("morgan");
 // const { Stats } = require("fs");
@@ -21,13 +13,6 @@ const {
 
 const registerUser = asyncHandler(async (req, res) => {
   try {
-    const { error } = registerUserValidation.validate(req.body);
-    if (error) {
-      return res.status(400).json({
-        status: false,
-        message: error.details[0].message,
-      });
-    }
     const { email, name, password, confirmPassword } = req.body;
 
     // if (!email || !name || !password || !confirmPassword) {
@@ -93,15 +78,8 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 });
 
-const loginUser = asyncHandler(async (req, res, next) => {
+const loginUser = asyncHandler(async (req, res) => {
   try {
-    const { error } = loginUserValidation.validate(req.body);
-    if (error) {
-      return res.status(400).json({
-        status: false,
-        message: error.details[0].message,
-      });
-    }
     const { email, password } = req.body;
     const user = await Users.findOne({ email });
 
@@ -146,12 +124,11 @@ const loginUser = asyncHandler(async (req, res, next) => {
     };
     return res.status(200).json(responseData);
   } catch (error) {
-    next(error);
-    // return res.status(500).json({
-    //   status: false,
-    //   message: "Error in login",
-    //   error: error.message,
-    // });
+    return res.status(500).json({
+      status: false,
+      message: "Error in login",
+      error: error.message,
+    });
   }
 });
 
@@ -268,13 +245,6 @@ const otpStorage = {};
 
 const forgotPassword = asyncHandler(async (req, res) => {
   try {
-    const { error } = forgotPasswordValidation.validate(req.body);
-    if (error) {
-      return res.status(400).json({
-        status: false,
-        message: error.details[0].message,
-      });
-    }
     const { email } = req.body;
     const user = await Users.findOne({ email });
     if (!user) {
@@ -309,23 +279,16 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
 const resetPassword = asyncHandler(async (req, res) => {
   try {
-    const { error } = resetPasswordValidations.validate(req.body);
-    if (error) {
-      return res.status(400).json({
-        status: false,
-        message: error.details[0].message,
-      });
-    }
     const { email, otp, newPassword, confirmNewPassword } = req.body;
     console.log(`Received OTP for user ${email}: ${otp}`);
     console.log(`Stored OTP for user ${email}: ${otpStorage[email]}`);
 
-    // if (!email || !otp || !newPassword) {
-    //   res.status(401).json({
-    //     status: "False",
-    //     message: "All fields are Required ",
-    //   });
-    // }
+    if (!email || !otp || !newPassword) {
+      res.status(401).json({
+        status: "False",
+        message: "All fields are Required ",
+      });
+    }
     if (newPassword !== confirmNewPassword) {
       res.status(500).json({
         status: false,
@@ -402,13 +365,6 @@ const getUserById = asyncHandler(async (req, res) => {
 
 const UpdatePassword = asyncHandler(async (req, res) => {
   try {
-    const { error } = updatePasswordValidation.validate(req.body);
-    if (error) {
-      return res.status(400).json({
-        status: false,
-        message: error.details[0].message,
-      });
-    }
     const { oldPassword, newPassword } = req.body;
     // const id = req.params.id;
     const id = req.user.id;
@@ -443,6 +399,7 @@ const UpdatePassword = asyncHandler(async (req, res) => {
     });
   }
 });
+
 module.exports = {
   registerUser,
   loginUser,

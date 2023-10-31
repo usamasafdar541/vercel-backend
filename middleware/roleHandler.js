@@ -1,5 +1,5 @@
 const adminHandler = (req, res, next) => {
-  console.log("User roles:", req.user.roles); // Log roles for debugging
+  console.log("User roles:", req.user.roles);
   if (req.user && req.user.roles.includes("admin")) {
     next();
   } else {

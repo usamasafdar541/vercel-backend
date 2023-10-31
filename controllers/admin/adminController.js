@@ -1,10 +1,9 @@
 const Users = require("../../modles/userModel");
 const asyncHandler = require("express-async-handler");
 const jwt = require("jsonwebtoken");
+const multerMiddleware = require("../../middleware/fileupload/fileUpload");
+const multer = require("multer");
 const jwtSecret = process.env.JWT_SECRET;
-// const otpService = require("../../services/otpService");
-// const secretKey = "mySecretKey";
-// const nodemailer = require("nodemailer");
 const bcrypt = require("bcrypt");
 const addAdmin = asyncHandler(async (req, res) => {
   try {
@@ -73,44 +72,13 @@ const createNewUser = asyncHandler(async (req, res) => {
         !phone ||
         !cnic ||
         !address ||
-        !req.files ||
-        !req.files.avatar
+        !req.file
       ) {
-        return res.status(404).json({
+        return res.status(400).json({
           status: false,
           message: "All fields are required",
         });
       }
-
-      // Check if the email already exists
-      const emailExist = await Users.findOne({ email });
-      if (emailExist) {
-        return res.status(404).json({
-          status: false,
-          message: "Email already exists",
-        });
-      }
-
-      // Check if the CNIC already exists
-      const cnicExist = await Users.findOne({ cnic });
-      if (cnicExist) {
-        return res.status(404).json({
-          status: false,
-          message: "CNIC already exists",
-        });
-      }
-      //file UPload COde
-      const avatar = req.files.avatar;
-      const avatarPath = `uploads/${avatar.name}`;
-      avatar.mv(avatarPath, (err) => {
-        if (err) {
-          return res.status(500).json({
-            status: false,
-            message: "Error in uploading avatar",
-            error: err.message,
-          });
-        }
-      });
 
       // Create a new user
       const user = new Users({
@@ -122,22 +90,21 @@ const createNewUser = asyncHandler(async (req, res) => {
         phone,
         cnic,
         address,
-        // avatar: avatarPath,
+        avatar: req.file.path, // Access req.file after Multer middleware
       });
 
       // Save the user to the database
       const result = await user.save();
 
-      return res.status(200).json({
+      return res.status(201).json({
         status: true,
         message: "User created successfully",
         data: result,
       });
     } else {
-      // If the user doesn't have admin role, return unauthorized
-      return res.status(404).json({
+      return res.status(403).json({
         status: false,
-        message: "UNAUTHORIZED, Admin access required",
+        message: "Unauthorized, Admin access required",
       });
     }
   } catch (error) {
@@ -148,6 +115,7 @@ const createNewUser = asyncHandler(async (req, res) => {
     });
   }
 });
+
 const deactivateUser = asyncHandler(async (req, res) => {
   try {
     const userId = req.params.id;

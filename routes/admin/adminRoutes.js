@@ -1,17 +1,20 @@
 const express = require("express");
 const router = express.Router();
 const adminController = require("../../controllers/admin/adminController");
-// const checkController = require("../../controllers/checkInOutController");
+const multerMiddleware = require("../../middleware/fileupload/fileUpload");
 const validator = require("../../middleware/validateToken");
-//admin role handler
 const adminHandler = require("../../middleware/roleHandler");
+
 router.post("/register", adminController.addAdmin);
 router.post(
   "/createuser",
+  multerMiddleware,
   validator,
   adminHandler,
   adminController.createNewUser
 );
+
+module.exports = router;
 router.post(
   "/deactivate/:id",
   adminHandler,

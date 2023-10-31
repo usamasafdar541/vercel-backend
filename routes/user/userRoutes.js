@@ -3,6 +3,7 @@ const router = express.Router();
 const userController = require("../../controllers/user/userController");
 const checkController = require("../../controllers/checkInOutController");
 const validator = require("../../middleware/validateToken");
+
 //admin role handler
 // const adminHandler = require("../../middleware/roleHandler");
 router.post("/register", userController.registerUser);
