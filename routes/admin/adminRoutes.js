@@ -5,7 +5,7 @@ const multerMiddleware = require("../../middleware/fileupload/fileUpload");
 const validator = require("../../middleware/validateToken");
 const adminHandler = require("../../middleware/roleHandler");
 
-router.post("/register", adminController.addAdmin);
+router.post("/registeradmin", adminController.addAdmin);
 router.post(
   "/createuser",
   multerMiddleware,

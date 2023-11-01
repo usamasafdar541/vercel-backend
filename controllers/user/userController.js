@@ -14,10 +14,6 @@ const {
   resetPasswordValidations,
   updatePasswordValidation,
 } = require("../../middleware/validator/validations");
-// const userServices = require("../services/user.services");
-// const { token } = require("morgan");
-// const { Stats } = require("fs");
-// admin users
 
 const registerUser = asyncHandler(async (req, res) => {
   try {
@@ -29,28 +25,6 @@ const registerUser = asyncHandler(async (req, res) => {
       });
     }
     const { email, name, password, confirmPassword } = req.body;
-
-    // if (!email || !name || !password || !confirmPassword) {
-    //   return res.status(400).json({
-    //     status: false,
-    //     message: "Fields are required",
-    //   });
-    // }
-
-    // if (password !== confirmPassword) {
-    //   return res.status(400).json({
-    //     status: false,
-    //     message: "Password and confirm password do not match",
-    //   });
-    // }
-
-    // if (password.length < 7) {
-    //   return res.status(400).json({
-    //     status: false,
-    //     message: "Password must be more than 7 characters long",
-    //   });
-    // }
-
     const userExist = await Users.findOne({ email });
 
     if (userExist) {
@@ -59,10 +33,8 @@ const registerUser = asyncHandler(async (req, res) => {
         message: "User already exists",
       });
     }
-
     // Password Hashing
     const hash = await bcrypt.hash(password, 10);
-
     const user = await new Users({
       email,
       name,
@@ -92,7 +64,6 @@ const registerUser = asyncHandler(async (req, res) => {
     });
   }
 });
-
 const loginUser = asyncHandler(async (req, res, next) => {
   try {
     const { error } = loginUserValidation.validate(req.body);
@@ -122,15 +93,13 @@ const loginUser = asyncHandler(async (req, res, next) => {
     }
     const isAdmin = user.roles.includes("admin");
     const tokenPayload = {
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        roles: user.roles,
-        isAdmin: isAdmin,
-      },
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      roles: user.roles,
+      isAdmin: isAdmin,
     };
-
+    //this is the changed version of my code
     const token = jwt.sign(tokenPayload, jwtSecret, {
       expiresIn: "1h",
     });
@@ -138,20 +107,15 @@ const loginUser = asyncHandler(async (req, res, next) => {
     const responseData = {
       status: true,
       message: "Logged in successfully",
-      data: {
-        userType: isAdmin ? "admin" : "user",
-        userInfo: tokenPayload,
-        token: token,
-      },
+      userType: isAdmin ? "admin" : "user",
+      // ...tokenPayload,
+      //  IFI DONT WANNA USE DATA:tokenPayload
+      userData: tokenPayload,
+      token: token,
     };
     return res.status(200).json(responseData);
   } catch (error) {
     next(error);
-    // return res.status(500).json({
-    //   status: false,
-    //   message: "Error in login",
-    //   error: error.message,
-    // });
   }
 });
 

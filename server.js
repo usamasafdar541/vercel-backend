@@ -17,7 +17,7 @@ const bodyParser = require("body-parser");
 // const contactRoutes = require("./routes/contactRoutes/contactRoutes");
 const route = require("./routes/route");
 // const adminRoutes = require("./routes/admin/adminRoutes");
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 5001;
 // app.use(corsMiddleware);
 require("./config/db");
 app.use(express.json());
