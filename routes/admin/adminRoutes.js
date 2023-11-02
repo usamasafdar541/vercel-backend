@@ -1,15 +1,15 @@
 const express = require("express");
 const router = express.Router();
-const adminController = require("../../controllers/admin/adminController");
 const multerMiddleware = require("../../middleware/fileupload/fileUpload");
-const validator = require("../../middleware/validateToken");
 const adminHandler = require("../../middleware/roleHandler");
+const validateToken = require("../../middleware/validateToken");
+const adminController = require("../../controllers/admin/adminController");
 
 router.post("/registeradmin", adminController.addAdmin);
 router.post(
   "/createuser",
   multerMiddleware,
-  validator,
+  validateToken,
   adminHandler,
   adminController.createNewUser
 );
@@ -18,21 +18,26 @@ module.exports = router;
 router.post(
   "/deactivate/:id",
   adminHandler,
-  validator,
+  validateToken,
   adminController.deactivateUser
 );
 router.post(
   "/activate/:id",
   adminHandler,
-  validator,
+  validateToken,
   adminController.activateUser
 );
 
-router.put("/update/:id", validator, adminHandler, adminController.updateUser);
+router.put(
+  "/update/:id",
+  validateToken,
+  adminHandler,
+  adminController.updateUser
+);
 
 router.delete(
   "/delete/:id",
-  validator,
+  validateToken,
   adminHandler,
   adminController.deleteUser
 );

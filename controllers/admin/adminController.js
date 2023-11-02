@@ -26,7 +26,7 @@ const addAdmin = asyncHandler(async (req, res) => {
     // Password Hashing
     const hash = await bcrypt.hash(password, 10);
     const adminUser = new Users({
-      email: "Admin11@gmail.com",
+      email: "Admin23@gmail.com",
       name: "Admin",
       password: hash, // Store the hashed password
       roles: ["admin"],
@@ -179,7 +179,6 @@ const updateUser = asyncHandler(async (req, res) => {
       cnic,
       address,
     } = req.body;
-
     const result = await Users.findByIdAndUpdate(
       id,
       { name, email, designation, department, gender, phone, cnic, address },

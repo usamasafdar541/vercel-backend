@@ -68,6 +68,7 @@ const loginUser = asyncHandler(async (req, res, next) => {
   try {
     const { error } = loginUserValidation.validate(req.body);
     if (error) {
+      next(error)
       return res.status(400).json({
         status: false,
         message: error.details[0].message,
@@ -100,7 +101,7 @@ const loginUser = asyncHandler(async (req, res, next) => {
       isAdmin: isAdmin,
     };
     //this is the changed version of my code
-    const token = jwt.sign(tokenPayload, jwtSecret, {
+    const token = jwt.sign( tokenPayload, jwtSecret, {
       expiresIn: "1h",
     });
 

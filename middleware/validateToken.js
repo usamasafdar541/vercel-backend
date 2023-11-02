@@ -11,13 +11,18 @@ const validateToken = asyncHandler(async (req, res, next) => {
     try {
       // Verify the token with the JWT_SECRET
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log("Decoded token:", decoded);
       if (decoded.exp * 1000 < Date.now()) {
         return res.status(401).json({
           status: false,
           message: "Token has expired",
         });
       }
-      req.user = decoded.user;
+      console.log("Request headers:", req.headers);
+
+      req.user = decoded;
+      console.log("decoded user is here:", decoded);
+
       next();
     } catch (error) {
       res.status(401).json({
