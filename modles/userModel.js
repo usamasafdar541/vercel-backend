@@ -28,6 +28,9 @@ const userSchema = mongoose.Schema(
     designation: {
       type: String,
     },
+    avatar: {
+      type: String,
+    },
     status: {
       type: String,
       enum: ["activated", "deactivated"],

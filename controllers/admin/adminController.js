@@ -79,7 +79,7 @@ const createNewUser = asyncHandler(async (req, res) => {
           message: "All fields are required",
         });
       }
-
+      const imagePath = req.file.path;
       // Create a new user
       const user = new Users({
         name,
@@ -90,12 +90,10 @@ const createNewUser = asyncHandler(async (req, res) => {
         phone,
         cnic,
         address,
-        avatar: req.file.path, // Access req.file after Multer middleware
+        avatar: imagePath, // Access req.file after Multer middleware
       });
-
       // Save the user to the database
       const result = await user.save();
-
       return res.status(201).json({
         status: true,
         message: "User created successfully",
